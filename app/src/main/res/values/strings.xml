@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">wifi2cot</string>
+    <!-- description -->
+    <string name="app_desc">Grab RSSI values from local Access Points and try to guess where they are.</string>
+
+
+
+
+</resources>
