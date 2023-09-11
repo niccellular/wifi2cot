@@ -3,13 +3,9 @@
 <plugin>
 
     <extension
-        type="transapps.maps.plugin.lifecycle.Lifecycle"
-        impl="com.atakmap.android.wifi2cot.plugin.wifi2cotLifecycle"
-        singleton="true" />
+        type="gov.tak.api.plugin.IPlugin"
+    impl="com.atakmap.android.wifi2cot.plugin.wifi2cotLifecycle"
+    singleton="true" />
 
-    <extension
-        type="transapps.maps.plugin.tool.ToolDescriptor"
-        impl="com.atakmap.android.wifi2cot.plugin.wifi2cotTool"
-        singleton="true" />
 
 </plugin>
