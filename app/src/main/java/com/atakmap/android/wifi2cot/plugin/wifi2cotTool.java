@@ -1,75 +1,26 @@
 
 package com.atakmap.android.wifi2cot.plugin;
 
-import com.atakmap.android.ipc.AtakBroadcast;
-import com.atakmap.android.wifi2cot.wifi2cotDropDownReceiver;
-
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.graphics.drawable.Drawable;
-import android.os.Bundle;
-import android.view.ViewGroup;
-import transapps.mapi.MapView;
-import transapps.maps.plugin.tool.Group;
-import transapps.maps.plugin.tool.Tool;
-import transapps.maps.plugin.tool.ToolDescriptor;
 
-public class wifi2cotTool extends Tool implements ToolDescriptor {
+import com.atak.plugins.impl.AbstractPluginTool;
+import gov.tak.api.util.Disposable;
 
-    private final Context context;
+public class wifi2cotTool extends AbstractPluginTool implements Disposable {
+
+    private final static String TAG = "wifi2cotTool";
 
     public wifi2cotTool(Context context) {
-        this.context = context;
+        super(context,
+                context.getString(R.string.app_name),
+                context.getString(R.string.app_name),
+                context.getResources().getDrawable(R.drawable.ic_launcher),
+                "com.atakmap.android.wifi2cot.SHOW_PLUGIN");
+        PluginNativeLoader.init(context);
     }
 
     @Override
-    public String getDescription() {
-        return context.getString(R.string.app_name);
+    public void dispose() {
     }
 
-    @Override
-    public Drawable getIcon() {
-        return (context == null) ? null
-                : context.getResources().getDrawable(R.drawable.ic_launcher);
-    }
-
-    @Override
-    public Group[] getGroups() {
-        return new Group[] {
-                Group.GENERAL
-        };
-    }
-
-    @Override
-    public String getShortDescription() {
-        return context.getString(R.string.app_name);
-    }
-
-    @Override
-    public Tool getTool() {
-        return this;
-    }
-
-    @Override
-    public void onActivate(Activity arg0, MapView arg1, ViewGroup arg2,
-            Bundle arg3,
-            ToolCallback arg4) {
-
-        // Hack to close the dropdown that automatically opens when a tool
-        // plugin is activated.
-        if (arg4 != null) {
-            arg4.onToolDeactivated(this);
-        }
-        // Intent to launch the dropdown or tool
-
-        //arg2.setVisibility(ViewGroup.INVISIBLE);
-        Intent i = new Intent(
-                wifi2cotDropDownReceiver.SHOW_PLUGIN);
-        AtakBroadcast.getInstance().sendBroadcast(i);
-    }
-
-    @Override
-    public void onDeactivate(ToolCallback arg0) {
-    }
 }
