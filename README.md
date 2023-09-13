@@ -1,5 +1,5 @@
 # wifi2cot
- Grab RSSI values from local Access Points and try to guess where they are.
+ ATAK Plugin that grab RSSI values from local Access Points and try to plot where they are on the map.
 
 # Directions
  The operations are simple, press Start to begin scanning for WIFI Access Points (AP) the longer and the more you move around the area of interest the better. When ready, press Stop and then Compute. This will take all the AP measurement readings and try to triangluate where the AP is.
