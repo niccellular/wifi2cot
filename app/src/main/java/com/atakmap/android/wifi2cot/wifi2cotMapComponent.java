@@ -59,6 +59,7 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
             public void onReceive(Context c, Intent intent) {
                 boolean success = intent.getBooleanExtra(
                         WifiManager.EXTRA_RESULTS_UPDATED, false);
+                Log.d(TAG, "wifiScanReceiver: " + success);
                 if (success) {
                     scanSuccess();
                 } else {
@@ -95,58 +96,69 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
 
     private void scanSuccess() {
 
+        Log.d(TAG, "Inside scanSuccess");
+
         if (!ddr.isScanning()) {
+            Log.d(TAG, "Not in scanning mode");
             return;
         }
 
-        List<ScanResult> results = wifiManager.getScanResults();
-        for (ScanResult s: results) {
-            double lat = mapView.getSelfMarker().getPoint().getLatitude();
-            double lng = mapView.getSelfMarker().getPoint().getLongitude();
+        new Thread() {
+            @Override
+            public void run() {
 
-            if (String.valueOf(lat).length() < 12) {
-                return;
-            } else if (String.valueOf(lng).length() < 12) {
-                return;
+                List<ScanResult> results = wifiManager.getScanResults();
+                for (ScanResult s: results) {
+
+                    Log.d(TAG, "Scan result: BSSID: " + s.BSSID + " SSID: " + s.SSID + " RSSI: " + s.level + " Freq: " + s.frequency);
+
+                    double lat = mapView.getSelfMarker().getPoint().getLatitude();
+                    double lng = mapView.getSelfMarker().getPoint().getLongitude();
+
+                    if (lat == 0 && lng == 0) {
+                        Log.d(TAG, "No GPS fix");
+                        return;
+                    }
+
+                    // data will be String["rssi", "self.lat", "self.lng", "bssid", "ssid"]
+                    if (!nodes.containsKey(s.BSSID)) {
+                        ArrayList<String[]> data = new ArrayList<>();
+                        String[] sample = new String[5];
+                        sample[0] = String.valueOf(100 - Math.abs(s.level));
+                        sample[1] = String.valueOf(lat);
+                        sample[2] = String.valueOf(lng);
+                        sample[3] = s.BSSID;
+                        sample[4] = s.SSID;
+
+                        if (sample[1].startsWith("0.0") && sample[2].startsWith("0.0")) {
+                            return;
+                        }
+
+                        data.add(sample);
+                        nodes.put(s.BSSID, data);
+                    } else {
+                        List<String[]> data = nodes.get(s.BSSID);
+                        String[] sample = new String[5];
+                        sample[0] = String.valueOf(100 - Math.abs(s.level));
+                        sample[1] = String.valueOf(lat);
+                        sample[2] = String.valueOf(lng);
+                        sample[3] = s.BSSID;
+                        sample[4] = s.SSID;
+
+                        if (sample[1].startsWith("0.0") && sample[2].startsWith("0.0")) {
+                            return;
+                        }
+
+                        try {
+                            data.add(sample);
+                            nodes.put(s.BSSID, data);
+                        } catch (NullPointerException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
             }
-
-            // data will be String["rssi", "self.lat", "self.lng", "bssid", "ssid"]
-            if (!nodes.containsKey(s.BSSID)) {
-                ArrayList<String[]> data = new ArrayList<>();
-                String[] sample = new String[5];
-                sample[0] = String.valueOf(100 - Math.abs(s.level));
-                sample[1] = String.valueOf(lat);
-                sample[2] = String.valueOf(lng);
-                sample[3] = s.BSSID;
-                sample[4] = s.SSID;
-
-                if (sample[1].startsWith("0.0") && sample[2].startsWith("0.0")) {
-                    return;
-                }
-
-                data.add(sample);
-                nodes.put(s.BSSID, data);
-            } else {
-                List<String[]> data = nodes.get(s.BSSID);
-                String[] sample = new String[5];
-                sample[0] = String.valueOf(100 - Math.abs(s.level));
-                sample[1] = String.valueOf(lat);
-                sample[2] = String.valueOf(lng);
-                sample[3] = s.BSSID;
-                sample[4] = s.SSID;
-
-                if (sample[1].startsWith("0.0") && sample[2].startsWith("0.0")) {
-                    return;
-                }
-
-                try {
-                    data.add(sample);
-                    nodes.put(s.BSSID, data);
-                } catch (NullPointerException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        }.start();
     }
 
     private void scanFailure() {

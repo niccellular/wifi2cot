@@ -96,7 +96,9 @@ public class wifi2cotDropDownReceiver extends DropDownReceiver implements
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        mc.getWifiManager().startScan();
+                        if (!mc.getWifiManager().startScan()) {
+                            Log.d(TAG, "Scan failed");
+                        }
                     }
                 },0, 5000);
             });
@@ -206,10 +208,15 @@ public class wifi2cotDropDownReceiver extends DropDownReceiver implements
             CotDetail cotDetail = new CotDetail("detail");
             cotEvent.setDetail(cotDetail);
 
+            CotDetail contactDetail = new CotDetail("contact");
+            contactDetail.setAttribute("callsign", ssid);
+            contactDetail.setAttribute("endpoint", "0.0.0.0:4242:tcp");
+
             CotDetail cotRemark = new CotDetail("remarks");
             cotRemark.setAttribute("source", "wifi2cot");
             cotRemark.setInnerText(String.format(Locale.US, "SSID: %s\nSample size: %d", ssid, sampleSize));
 
+            cotDetail.addChild(contactDetail);
             cotDetail.addChild(cotRemark);
 
             if (cotEvent.isValid())
