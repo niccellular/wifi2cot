@@ -5,6 +5,15 @@
     <!-- description -->
     <string name="app_desc">Grab RSSI values from local Access Points and try to guess where they are.</string>
 
+    <!-- UI -->
+    <string name="w2c_title">WIFI2COT</string>
+    <string name="w2c_subtitle">Access-point geolocation</string>
+    <string name="w2c_status_idle">Idle — press Start to scan</string>
+    <string name="w2c_start">Start scan</string>
+    <string name="w2c_stop">Stop scan</string>
+    <string name="w2c_compute">Compute &amp; plot</string>
+    <string name="w2c_hint">Tip: walk a loop around the area for the best fix. Disable Wi-Fi scan throttling in Developer options for faster scans.</string>
+
 
 
 
