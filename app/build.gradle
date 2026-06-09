@@ -132,6 +132,14 @@ android {
     compileSdk 36
     namespace 'com.atakmap.android.wifi2cot.plugin'
 
+    // Required by the takdev release-signing lint: the app bundle must not
+    // store an archive, otherwise it cannot be signed for release on tak.gov.
+    bundle {
+        storeArchive {
+            enable = false
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
