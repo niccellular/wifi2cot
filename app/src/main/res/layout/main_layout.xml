@@ -1,45 +1,129 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:fadeScrollbars="false"
-    android:layout_marginLeft="3dp"
-    android:layout_marginRight="3dp">
+    android:fillViewport="true"
+    android:padding="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical" >
+        android:orientation="vertical"
+        android:background="@drawable/w2c_card"
+        android:padding="18dp">
 
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <View
+                android:layout_width="4dp"
+                android:layout_height="34dp"
+                android:background="@color/w2c_accent" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/w2c_title"
+                    android:textColor="@color/w2c_text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.12" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/w2c_subtitle"
+                    android:textColor="@color/w2c_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="@color/w2c_stroke" />
+
+        <!-- Status pill -->
         <TextView
-            android:layout_width="wrap_content"
+            android:id="@+id/status"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/app_name" />
+            android:background="@drawable/w2c_status_pill"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:text="@string/w2c_status_idle"
+            android:textColor="@color/w2c_accent"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
 
+        <!-- Primary action -->
+        <Button
+            android:id="@+id/start"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/w2c_btn_primary"
+            android:text="@string/w2c_start"
+            android:textColor="@color/w2c_text_on_primary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:stateListAnimator="@null" />
+
+        <!-- Stop -->
+        <Button
+            android:id="@+id/stop"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/w2c_btn_danger"
+            android:text="@string/w2c_stop"
+            android:textColor="@color/w2c_text_on_dark"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:stateListAnimator="@null" />
+
+        <!-- Compute -->
+        <Button
+            android:id="@+id/guess"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/w2c_btn_neutral"
+            android:text="@string/w2c_compute"
+            android:textColor="@color/w2c_text_on_dark"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:stateListAnimator="@null" />
+
+        <!-- Footer hint -->
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Wi-Fi Scanning" />
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Start Scan"
-            android:id="@+id/start"/>
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Stop Scan"
-            android:id="@+id/stop"/>
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Take a Guess"
-            android:id="@+id/guess"/>
+            android:layout_marginTop="18dp"
+            android:text="@string/w2c_hint"
+            android:textColor="@color/w2c_text_secondary"
+            android:textSize="11sp"
+            android:lineSpacingExtra="2dp" />
 
     </LinearLayout>
 </ScrollView>

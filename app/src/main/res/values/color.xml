@@ -1,12 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    
+
     <!-- COMMON -->
     <color name="white">#ffffff</color>
     <color name="darker_gray">#121212</color>
 
-    <!-- LED -->
+    <!-- wifi2cot modern palette -->
+    <color name="w2c_surface">#15181B</color>
+    <color name="w2c_surface_alt">#1C2024</color>
+    <color name="w2c_stroke">#2A2F35</color>
 
-    <!-- PRESET -->
+    <color name="w2c_text_primary">#F5F7FA</color>
+    <color name="w2c_text_secondary">#8B939C</color>
+
+    <color name="w2c_accent">#1ED5A6</color>
+    <color name="w2c_accent_pressed">#15A382</color>
+    <color name="w2c_accent_soft">#0F2E27</color>
+
+    <color name="w2c_danger">#E5484D</color>
+    <color name="w2c_danger_pressed">#B5393D</color>
+
+    <color name="w2c_neutral">#232830</color>
+    <color name="w2c_neutral_pressed">#2E353F</color>
+    <color name="w2c_disabled">#2A2E33</color>
+    <color name="w2c_disabled_text">#5A626B</color>
 
 </resources>
