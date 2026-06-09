@@ -11,50 +11,57 @@ import android.net.wifi.WifiManager;
 import com.atakmap.android.ipc.AtakBroadcast.DocumentedIntentFilter;
 
 import com.atakmap.android.maps.MapView;
+import com.atakmap.android.maps.Marker;
 import com.atakmap.android.dropdown.DropDownMapComponent;
+import com.atakmap.coremap.maps.coords.GeoPoint;
 
 import com.atakmap.coremap.log.Log;
 import com.atakmap.android.wifi2cot.plugin.R;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class wifi2cotMapComponent extends DropDownMapComponent {
 
     private static final String TAG = "wifi2cotMapComponent";
-
-    private Context pluginContext;
 
     private MapView mapView;
 
     private wifi2cotDropDownReceiver ddr;
 
     private WifiManager wifiManager;
+    private BroadcastReceiver wifiScanReceiver;
 
-    // nodes will hold k,v for the BSSID and the rssi,lat,lng,bssid,ssid values
-    private final static HashMap<String, List<String[]>> nodes = new HashMap<>();
+    // Single worker so scan callbacks are processed in order off the UI thread
+    // (the old code spawned a fresh Thread per callback -> races on `nodes`).
+    private final ExecutorService worker = Executors.newSingleThreadExecutor();
+
+    // BSSID -> observations. Concurrent map + copy-on-write lists so the worker
+    // thread can append while the UI thread reads in compute() without locking.
+    private static final Map<String, List<Sample>> nodes = new ConcurrentHashMap<>();
 
     public void onCreate(final Context context, Intent intent,
             final MapView view) {
 
         context.setTheme(R.style.ATAKPluginTheme);
         super.onCreate(context, intent, view);
-        pluginContext = context;
         mapView = view;
 
-        ddr = new wifi2cotDropDownReceiver(
-                view, context, this);
+        ddr = new wifi2cotDropDownReceiver(view, context, this);
 
         Log.d(TAG, "registering the plugin filter");
         DocumentedIntentFilter ddFilter = new DocumentedIntentFilter();
         ddFilter.addAction(wifi2cotDropDownReceiver.SHOW_PLUGIN);
         registerDropDownReceiver(ddr, ddFilter);
 
-        wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        wifiManager = (WifiManager) context.getApplicationContext()
+                .getSystemService(Context.WIFI_SERVICE);
 
-        BroadcastReceiver wifiScanReceiver = new BroadcastReceiver() {
+        wifiScanReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context c, Intent intent) {
                 boolean success = intent.getBooleanExtra(
@@ -63,7 +70,6 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
                 if (success) {
                     scanSuccess();
                 } else {
-                    // scan failure handling
                     scanFailure();
                 }
             }
@@ -71,106 +77,70 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        context.registerReceiver(wifiScanReceiver, intentFilter);
-
-        boolean success = wifiManager.startScan();
-        if (!success) {
-            // scan failure handling
-            scanFailure();
-        }
-    }
-
-    double getDistance(int rssi, int txPower, int freq) {
-        /*
-         * RSSI = TxPower - 10 * n * lg(d)
-         * n = 2 (in free space)
-         *
-         * d = 10 ^ ((TxPower - RSSI) / (10 * n))
-         */
-        int n = 2;
-        if (freq > 5000) {
-            n++;
-        }
-        return Math.pow(10d, ((double) txPower - rssi) / (10 * n));
+        context.getApplicationContext().registerReceiver(wifiScanReceiver, intentFilter);
     }
 
     private void scanSuccess() {
-
-        Log.d(TAG, "Inside scanSuccess");
 
         if (!ddr.isScanning()) {
             Log.d(TAG, "Not in scanning mode");
             return;
         }
+        if (wifiManager == null)
+            return;
 
-        new Thread() {
-            @Override
-            public void run() {
+        // Snapshot the observer position ONCE per scan batch (it is constant for
+        // the batch) and bail early if we have no fix.
+        Marker self = mapView.getSelfMarker();
+        GeoPoint here = (self != null) ? self.getPoint() : null;
+        if (here == null || !here.isValid()
+                || (Math.abs(here.getLatitude()) < 1e-9
+                        && Math.abs(here.getLongitude()) < 1e-9)) {
+            Log.d(TAG, "No GPS fix; dropping scan batch");
+            return;
+        }
 
-                List<ScanResult> results = wifiManager.getScanResults();
-                for (ScanResult s: results) {
+        final double lat = here.getLatitude();
+        final double lng = here.getLongitude();
+        final double alt = here.isAltitudeValid()
+                ? here.getAltitude() : Double.NaN;
+        final long now = System.currentTimeMillis();
 
-                    Log.d(TAG, "Scan result: BSSID: " + s.BSSID + " SSID: " + s.SSID + " RSSI: " + s.level + " Freq: " + s.frequency);
+        final List<ScanResult> results = wifiManager.getScanResults();
 
-                    double lat = mapView.getSelfMarker().getPoint().getLatitude();
-                    double lng = mapView.getSelfMarker().getPoint().getLongitude();
+        worker.execute(() -> {
+            for (ScanResult s : results) {
+                if (s.BSSID == null)
+                    continue; // skip malformed result, keep processing the rest
 
-                    if (lat == 0 && lng == 0) {
-                        Log.d(TAG, "No GPS fix");
-                        return;
-                    }
+                Log.d(TAG, "Scan result: BSSID: " + s.BSSID + " SSID: " + s.SSID
+                        + " RSSI: " + s.level + " Freq: " + s.frequency);
 
-                    // data will be String["rssi", "self.lat", "self.lng", "bssid", "ssid"]
-                    if (!nodes.containsKey(s.BSSID)) {
-                        ArrayList<String[]> data = new ArrayList<>();
-                        String[] sample = new String[5];
-                        sample[0] = String.valueOf(100 - Math.abs(s.level));
-                        sample[1] = String.valueOf(lat);
-                        sample[2] = String.valueOf(lng);
-                        sample[3] = s.BSSID;
-                        sample[4] = s.SSID;
+                Sample sample = new Sample(s.level, s.frequency, lat, lng, alt,
+                        s.BSSID, s.SSID == null ? "" : s.SSID, now);
 
-                        if (sample[1].startsWith("0.0") && sample[2].startsWith("0.0")) {
-                            return;
-                        }
-
-                        data.add(sample);
-                        nodes.put(s.BSSID, data);
-                    } else {
-                        List<String[]> data = nodes.get(s.BSSID);
-                        String[] sample = new String[5];
-                        sample[0] = String.valueOf(100 - Math.abs(s.level));
-                        sample[1] = String.valueOf(lat);
-                        sample[2] = String.valueOf(lng);
-                        sample[3] = s.BSSID;
-                        sample[4] = s.SSID;
-
-                        if (sample[1].startsWith("0.0") && sample[2].startsWith("0.0")) {
-                            return;
-                        }
-
-                        try {
-                            data.add(sample);
-                            nodes.put(s.BSSID, data);
-                        } catch (NullPointerException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
+                // computeIfAbsent + COW list = safe concurrent append.
+                nodes.computeIfAbsent(s.BSSID,
+                        k -> new CopyOnWriteArrayList<>()).add(sample);
             }
-        }.start();
+        });
     }
 
     private void scanFailure() {
-        // handle failure: new scan did NOT succeed
-        // consider using old scan results: these are the OLD results!
-        List<ScanResult> results = wifiManager.getScanResults();
-        Log.d(TAG, "Scan failed");
-//  ... potentially use older scan results ...
+        // A failed scan just means the OS returned cached results; do not ingest
+        // them (their position would be wrong) and do not spam errors.
+        Log.d(TAG, "Scan failed (throttled or no new results)");
     }
 
     @Override
     protected void onDestroyImpl(Context context, MapView view) {
+        try {
+            if (wifiScanReceiver != null)
+                context.getApplicationContext().unregisterReceiver(wifiScanReceiver);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "scan receiver already unregistered", e);
+        }
+        worker.shutdownNow();
         super.onDestroyImpl(context, view);
     }
 
@@ -178,8 +148,20 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
         return this.wifiManager;
     }
 
-    public static HashMap<String, List<String[]>> getNodes() {
+    public static Map<String, List<Sample>> getNodes() {
         return nodes;
     }
 
+    /** Total readings captured across all access points (for the UI status). */
+    public static int totalSamples() {
+        int total = 0;
+        for (List<Sample> v : nodes.values())
+            total += v.size();
+        return total;
+    }
+
+    /** Wrapper so callers don't fight {@code Map} immutability semantics. */
+    public static void clearNodes() {
+        nodes.clear();
+    }
 }
