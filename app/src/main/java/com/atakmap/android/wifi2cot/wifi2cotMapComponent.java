@@ -35,6 +35,10 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
 
     private WifiManager wifiManager;
     private BroadcastReceiver wifiScanReceiver;
+    // ATAK application context used for the WifiManager + scan receiver. NOTE:
+    // the plugin Context passed to onCreate has a null getApplicationContext(),
+    // so we must derive a real context from the MapView (the ATAK activity).
+    private Context appContext;
 
     // Single worker so scan callbacks are processed in order off the UI thread
     // (the old code spawned a fresh Thread per callback -> races on `nodes`).
@@ -58,8 +62,8 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
         ddFilter.addAction(wifi2cotDropDownReceiver.SHOW_PLUGIN);
         registerDropDownReceiver(ddr, ddFilter);
 
-        wifiManager = (WifiManager) context.getApplicationContext()
-                .getSystemService(Context.WIFI_SERVICE);
+        appContext = view.getContext().getApplicationContext();
+        wifiManager = (WifiManager) appContext.getSystemService(Context.WIFI_SERVICE);
 
         wifiScanReceiver = new BroadcastReceiver() {
             @Override
@@ -77,7 +81,7 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        context.getApplicationContext().registerReceiver(wifiScanReceiver, intentFilter);
+        appContext.registerReceiver(wifiScanReceiver, intentFilter);
     }
 
     private void scanSuccess() {
@@ -135,8 +139,8 @@ public class wifi2cotMapComponent extends DropDownMapComponent {
     @Override
     protected void onDestroyImpl(Context context, MapView view) {
         try {
-            if (wifiScanReceiver != null)
-                context.getApplicationContext().unregisterReceiver(wifiScanReceiver);
+            if (wifiScanReceiver != null && appContext != null)
+                appContext.unregisterReceiver(wifiScanReceiver);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "scan receiver already unregistered", e);
         }
