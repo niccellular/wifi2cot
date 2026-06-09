@@ -38,5 +38,7 @@ Android dependencies and is unit-tested in `TrilaterationTest`.
 
 ## Building
 
-Targets **ATAK 5.7** (`ATAK_VERSION = 5.7.0`), AGP 8.7 / Gradle 8.14, Java 17,
-`compileSdk 36`.
+Targets **ATAK 5.7** (`ATAK_VERSION = 5.7.0`), AGP 8.9 / Gradle 8.14, Java 17,
+`compileSdk 36`. Signing falls back to the build-generated
+`${buildDir}/android_keystore` when no `local.properties` keys are present, so it
+builds unchanged on tak.gov/user_builds.

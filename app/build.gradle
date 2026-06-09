@@ -59,7 +59,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'com.android.tools.build:gradle:8.9.1'
         if(isDevKitEnabled()) {
             classpath "com.atakmap.gradle:atak-gradle-takdev:${takdevVersion}"
         } else {
@@ -144,36 +144,45 @@ android {
           abortOnError true
       }
 
+    // Signing resolves in two ways so the plugin builds both with the local
+    // devkit and on the tak.gov build service (which has no local.properties and
+    // provides a keystore at ${buildDir}/android_keystore):
+    //   1. If local.properties defines tak<Type>Key* entries, use those.
+    //   2. Otherwise fall back to the build-generated android_keystore.
     signingConfigs {
         debug {
             def kf = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takDebugKeyFile')
-            def kfp = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takDebugKeyFilePassword')
-            def ka = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takDebugKeyAlias')
-            def kp = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takDebugKeyPassword')
-
-            if (kf == null) {
-                 throw new GradleException("No signing key configured!")
+            if (kf != null) {
+                def kfp = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takDebugKeyFilePassword')
+                def ka = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takDebugKeyAlias')
+                def kp = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takDebugKeyPassword')
+                storeFile file(kf)
+                if (kfp != null) storePassword kfp
+                if (ka != null) keyAlias ka
+                if (kp != null) keyPassword kp
+            } else {
+                storeFile file("${buildDir}/android_keystore")
+                storePassword "tnttnt"
+                keyAlias "wintec_mapping"
+                keyPassword "tnttnt"
             }
- 
-            storeFile file(kf)
-            if (kfp != null) storePassword kfp
-            if (ka != null) keyAlias ka
-            if (kp != null) keyPassword kp
         }
         release {
             def kf = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takReleaseKeyFile')
-            def kfp = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takReleaseKeyFilePassword')
-            def ka = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takReleaseKeyAlias')
-            def kp = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takReleaseKeyPassword')
-
-            if (kf == null) {
-                 throw new GradleException("No signing key configured!")
+            if (kf != null) {
+                def kfp = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takReleaseKeyFilePassword')
+                def ka = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takReleaseKeyAlias')
+                def kp = getValueFromPropertiesFile(project.rootProject.file('local.properties'), 'takReleaseKeyPassword')
+                storeFile file(kf)
+                if (kfp != null) storePassword kfp
+                if (ka != null) keyAlias ka
+                if (kp != null) keyPassword kp
+            } else {
+                storeFile file("${buildDir}/android_keystore")
+                storePassword "tnttnt"
+                keyAlias "wintec_mapping"
+                keyPassword "tnttnt"
             }
-
-            storeFile file(kf)
-            if (kfp != null) storePassword kfp
-            if (ka != null) keyAlias ka
-            if (kp != null) keyPassword kp
         }
     }
 

@@ -5,7 +5,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath('com.android.tools.build:gradle:8.7.3') {
+        classpath('com.android.tools.build:gradle:8.9.1') {
             exclude group: "net.sf.proguard", module: "proguard-gradle"
         }
         // NOTE: Do not place your application dependencies here; they belong
